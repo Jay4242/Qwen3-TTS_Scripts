@@ -75,4 +75,7 @@ if __name__ == "__main__":
         help="Optional instruction for voice style (e.g., 'happy', 'angry').",
     )
     args = parser.parse_args()
-    main(args.text, args.speaker)
+    try:
+        main(args.text, args.speaker)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user. Exiting.")

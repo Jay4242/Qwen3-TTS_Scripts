@@ -1,0 +1,71 @@
+# coding=utf-8
+# Copyright 2026 The Alibaba Qwen team.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import time
+import torch
+import soundfile as sf
+import argparse
+
+from qwen_tts import Qwen3TTSModel
+
+
+def main(text: str, speaker: str, instruct: str = None):
+    device = "cpu"
+    MODEL_PATH = "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
+
+    tts = Qwen3TTSModel.from_pretrained(
+        MODEL_PATH,
+        device_map=device,
+        dtype=torch.float32,
+        attn_implementation="eager",
+    )
+
+    t0 = time.time()
+
+    wavs, sr = tts.generate_custom_voice(
+        text=text,
+        language="English",
+        speaker=speaker,
+        instruct=instruct,
+    )
+
+    t1 = time.time()
+    print(f"[CustomVoice English] time: {t1 - t0:.3f}s")
+
+    sf.write("qwen3_tts_test_custom_voice_english.wav", wavs[0], sr)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--text",
+        type=str,
+        required=True,
+        help="Spoken text to synthesize.",
+    )
+    parser.add_argument(
+        "--speaker",
+        type=str,
+        required=True,
+        help="Speaker name for the custom voice model (e.g., 'Ryan').",
+    )
+    parser.add_argument(
+        "--instruct",
+        type=str,
+        default=None,
+        help="Optional instruction for voice style (e.g., 'happy', 'angry').",
+    )
+    args = parser.parse_args()
+    main(args.text, args.speaker)

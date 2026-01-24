@@ -27,8 +27,25 @@ torch.set_num_threads(max_threads)
 
 from qwen_tts import Qwen3TTSModel
 
+# Supported speakers for CustomVoice model (as listed in README)
+SUPPORTED_SPEAKERS = {
+    "Vivian",
+    "Serena",
+    "Uncle_Fu",
+    "Dylan",
+    "Eric",
+    "Ryan",
+    "Aiden",
+    "Ono_Anna",
+    "Sohee",
+}
+
 
 def main(text: str, speaker: str, instruct: str = None):
+    if speaker not in SUPPORTED_SPEAKERS:
+        raise ValueError(
+            f"Speaker '{speaker}' is not supported. Choose from: {', '.join(sorted(SUPPORTED_SPEAKERS))}"
+        )
     device = "cpu"
     MODEL_PATH = "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice"
 

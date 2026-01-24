@@ -68,4 +68,7 @@ if __name__ == "__main__":
         help="Instruction for the voice design.",
     )
     args = parser.parse_args()
-    main(args.text, args.instruct)
+    try:
+        main(args.text, args.instruct)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user. Exiting.")

@@ -155,4 +155,7 @@ if __name__ == "__main__":
     if os.path.isfile(args.ref_text):
         with open(args.ref_text, "r", encoding="utf-8") as f:
             args.ref_text = f.read().strip()
-    main(args.ref_audio, args.ref_text, args.syn_text, args.syn_lang)
+    try:
+        main(args.ref_audio, args.ref_text, args.syn_text, args.syn_lang)
+    except KeyboardInterrupt:
+        print("\nInterrupted by user. Exiting.")

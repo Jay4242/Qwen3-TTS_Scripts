@@ -18,6 +18,13 @@ import torch
 import soundfile as sf
 import argparse
 
+# Dynamically set CPU thread limits based on available cores
+import os
+max_threads = max(1, (os.cpu_count() or 1) - 2)
+os.environ["OMP_NUM_THREADS"] = str(max_threads)
+os.environ["MKL_NUM_THREADS"] = str(max_threads)
+torch.set_num_threads(max_threads)
+
 from qwen_tts import Qwen3TTSModel
 
 

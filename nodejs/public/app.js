@@ -236,29 +236,62 @@ async function sendRecording(audioBlob, filename) {
 
   try {
     setStatus("Uploading audio...");
-    const response = await fetch("/api/chat", {
+    const transcribeResponsePromise = fetch("/api/transcribe", {
       method: "POST",
       body: formData,
     });
 
-    setStatus("Transcribing audio and generating reply...");
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || "Request failed.");
+    setStatus("Transcribing audio...");
+    const transcribeResponse = await transcribeResponsePromise;
+    const transcribeData = await transcribeResponse.json();
+    if (!transcribeResponse.ok) {
+      throw new Error(transcribeData.error || "Request failed.");
     }
 
-    if (data.audioBase64) {
-      setStatus("Synthesizing speech...");
+    const transcript =
+      typeof transcribeData.transcript === "string" ? transcribeData.transcript : "";
+
+    if (!transcript) {
+      throw new Error("Transcription was empty.");
     }
 
-    if (data.transcript) {
-      appendChatMessage("user", data.transcript);
+    appendChatMessage("user", transcript);
+
+    setStatus("Thinking about it...");
+    const llmResponse = await fetch("/api/llm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript, chatHistory: chatHistoryPayload }),
+    });
+    const llmData = await llmResponse.json();
+    if (!llmResponse.ok) {
+      throw new Error(llmData.error || "Request failed.");
     }
-    if (data.assistantReply) {
-      appendChatMessage("assistant", data.assistantReply, data.audioBase64 || null);
-      if (data.audioBase64) {
-        await playLatestAssistantAudio();
-      }
+
+    const assistantReply =
+      typeof llmData.assistantReply === "string" ? llmData.assistantReply : "";
+
+    if (!assistantReply) {
+      throw new Error("LLM response was empty.");
+    }
+
+    setStatus("Finding the words...");
+    const ttsResponse = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: assistantReply }),
+    });
+    const ttsData = await ttsResponse.json();
+    if (!ttsResponse.ok) {
+      throw new Error(ttsData.error || "Request failed.");
+    }
+
+    const audioBase64 =
+      typeof ttsData.audioBase64 === "string" ? ttsData.audioBase64 : null;
+
+    appendChatMessage("assistant", assistantReply, audioBase64);
+    if (audioBase64) {
+      await playLatestAssistantAudio();
     }
 
     setStatus("Ready.");

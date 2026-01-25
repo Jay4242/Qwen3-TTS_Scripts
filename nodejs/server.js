@@ -12,6 +12,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 30 * 1024 * 1024 },
 });
+app.use(express.json({ limit: "1mb" }));
 
 const DEFAULT_STAGE_TIMEOUT_SECONDS = 1800;
 
@@ -226,6 +227,77 @@ async function synthesizeSpeech(text, refAudioBuffer, refText, synLang) {
   }
   return json.audio_base64;
 }
+
+app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
+  try {
+    const audioFile = req.file;
+    const translate = config.whisperTranslate;
+
+    if (!audioFile) {
+      return res.status(400).json({ error: "Missing recorded audio." });
+    }
+
+    const transcript = await transcribeAudio(
+      audioFile.buffer,
+      audioFile.originalname,
+      audioFile.mimetype,
+      translate
+    );
+
+    return res.json({ transcript });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Unknown error.",
+    });
+  }
+});
+
+app.post("/api/llm", async (req, res) => {
+  try {
+    const transcript =
+      typeof req.body?.transcript === "string" ? req.body.transcript.trim() : "";
+    if (!transcript) {
+      return res.status(400).json({ error: "Transcript is required." });
+    }
+
+    const chatHistory = normalizeChatHistory(req.body?.chatHistory);
+    const assistantReply = await generateAssistantReply(transcript, chatHistory);
+
+    return res.json({ assistantReply });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Unknown error.",
+    });
+  }
+});
+
+app.post("/api/tts", async (req, res) => {
+  try {
+    const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+    if (!text) {
+      return res.status(400).json({ error: "Text is required." });
+    }
+
+    const requestedLang =
+      typeof req.body?.synLang === "string" ? req.body.synLang : config.qwenTtsLang;
+    const synLang = (requestedLang || "Auto").trim() || "Auto";
+    const audioBase64 = await synthesizeSpeech(
+      text,
+      referenceAudioBuffer,
+      referenceText,
+      synLang
+    );
+
+    return res.json({ audioBase64 });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: error instanceof Error ? error.message : "Unknown error.",
+    });
+  }
+});
 
 app.post("/api/chat", upload.single("audio"), async (req, res) => {
   try {

@@ -21,12 +21,14 @@ body {
 .container {
   max-width: 960px;
   margin: 0 auto;
-  padding: 32px 20px 48px;
+  padding: calc(32px + env(safe-area-inset-top)) 20px
+    calc(48px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 20px;
-  height: 100vh;
+  height: 100dvh;
   min-height: 0;
+  box-sizing: border-box;
 }
 
 header h1 {

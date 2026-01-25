@@ -12,11 +12,23 @@ const upload = multer({
   limits: { fileSize: 30 * 1024 * 1024 },
 });
 
+const DEFAULT_STAGE_TIMEOUT_SECONDS = 1800;
+
+function parseTimeoutSeconds(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_STAGE_TIMEOUT_SECONDS;
+}
+
+function toTimeoutMs(seconds) {
+  return Math.round(seconds * 1000);
+}
+
 const config = {
   appTitle: process.env.APP_TITLE ?? "Voice Webchat",
   whisperUrl: process.env.WHISPER_SERVER_URL ?? "http://127.0.0.1:9191/inference",
   whisperTranslate:
     process.env.WHISPER_TRANSLATE === "true" || process.env.WHISPER_TRANSLATE === "1",
+  whisperTimeoutSeconds: parseTimeoutSeconds(process.env.WHISPER_TIMEOUT_SECONDS),
   llmBaseUrl: process.env.LLM_BASE_URL ?? "http://127.0.0.1:9090/v1",
   llmApiKey: process.env.LLM_API_KEY ?? "LAN",
   llmModel: process.env.LLM_MODEL ?? "qwen3",
@@ -25,8 +37,10 @@ const config = {
     process.env.LLM_PREPROMPT ??
     "Use the following transcription to respond conversationally.",
   llmPostprompt: process.env.LLM_POSTPROMPT ?? "",
+  llmTimeoutSeconds: parseTimeoutSeconds(process.env.LLM_TIMEOUT_SECONDS),
   qwenTtsUrl: process.env.QWEN_TTS_URL ?? "http://127.0.0.1:8000",
   qwenTtsLang: process.env.QWEN_TTS_LANG ?? "Auto",
+  ttsTimeoutSeconds: parseTimeoutSeconds(process.env.TTS_TIMEOUT_SECONDS),
 };
 
 const referenceAudioPath = process.env.REF_AUDIO_PATH
@@ -52,6 +66,21 @@ app.get("/api/config", (req, res) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
+async function fetchWithTimeout(url, options, timeoutMs, timeoutMessage) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw new Error(timeoutMessage);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function transcribeAudio(audioBuffer, filename, mimeType, translate) {
   const form = new FormData();
   form.append(
@@ -65,10 +94,15 @@ async function transcribeAudio(audioBuffer, filename, mimeType, translate) {
     form.append("translate", "true");
   }
 
-  const response = await fetch(config.whisperUrl, {
-    method: "POST",
-    body: form,
-  });
+  const response = await fetchWithTimeout(
+    config.whisperUrl,
+    {
+      method: "POST",
+      body: form,
+    },
+    toTimeoutMs(config.whisperTimeoutSeconds),
+    `Whisper request timed out after ${config.whisperTimeoutSeconds} seconds.`
+  );
 
   const raw = await response.text();
   if (!response.ok) {
@@ -131,11 +165,22 @@ async function generateAssistantReply(transcript, chatHistory) {
     messages.push({ role: "user", content: config.llmPostprompt });
   }
 
-  const completion = await openai.chat.completions.create({
-    model: config.llmModel,
-    messages,
-    temperature: 0.7,
-  });
+  let completion;
+  try {
+    completion = await openai.chat.completions.create(
+      {
+        model: config.llmModel,
+        messages,
+        temperature: 0.7,
+      },
+      { timeout: toTimeoutMs(config.llmTimeoutSeconds) }
+    );
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw new Error(`LLM request timed out after ${config.llmTimeoutSeconds} seconds.`);
+    }
+    throw error;
+  }
 
   const reply = completion.choices?.[0]?.message?.content?.trim();
   if (!reply) {
@@ -152,11 +197,16 @@ async function synthesizeSpeech(text, refAudioBuffer, refText, synLang) {
     syn_lang: synLang,
   };
 
-  const response = await fetch(`${config.qwenTtsUrl.replace(/\/$/, "")}/clone`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const response = await fetchWithTimeout(
+    `${config.qwenTtsUrl.replace(/\/$/, "")}/clone`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    toTimeoutMs(config.ttsTimeoutSeconds),
+    `TTS request timed out after ${config.ttsTimeoutSeconds} seconds.`
+  );
 
   const responseBody = await response.text();
   if (!response.ok) {

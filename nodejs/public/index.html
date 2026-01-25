@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Voice Webchat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1 id="appTitle">Voice Webchat</h1>
+      </header>
+
+      <section class="card output">
+        <div id="chatLog" class="chat-log" aria-live="polite"></div>
+        <div class="chat-footer">
+          <p id="status">Idle.</p>
+          <p id="securityNote" class="note" hidden>
+            Microphone access requires HTTPS or localhost. When running from a remote
+            computer, use HTTPS (or a secure tunnel) to allow recording.
+          </p>
+          <div class="chat-controls">
+            <button id="clearChatButton" class="secondary" type="button">Clear chat</button>
+            <button id="recordButton" type="button">Start chatting</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

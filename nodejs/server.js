@@ -32,11 +32,9 @@ const config = {
   llmBaseUrl: process.env.LLM_BASE_URL ?? "http://127.0.0.1:9090/v1",
   llmApiKey: process.env.LLM_API_KEY ?? "LAN",
   llmModel: process.env.LLM_MODEL ?? "qwen3",
-  llmSystem: process.env.LLM_SYSTEM ?? "You are a helpful assistant.",
-  llmPreprompt:
-    process.env.LLM_PREPROMPT ??
-    "Use the following transcription to respond conversationally.",
-  llmPostprompt: process.env.LLM_POSTPROMPT ?? "",
+  llmSystem:
+    process.env.LLM_SYSTEM ??
+    "You are a helpful assistant. Use the following transcription to respond conversationally.",
   llmTimeoutSeconds: parseTimeoutSeconds(process.env.LLM_TIMEOUT_SECONDS),
   qwenTtsUrl: process.env.QWEN_TTS_URL ?? "http://127.0.0.1:8000",
   qwenTtsLang: process.env.QWEN_TTS_LANG ?? "Auto",
@@ -151,19 +149,13 @@ function normalizeChatHistory(raw) {
 }
 
 async function generateAssistantReply(transcript, chatHistory) {
-  const messages = [
-    { role: "system", content: config.llmSystem },
-    { role: "user", content: config.llmPreprompt },
-  ];
+  const messages = [{ role: "system", content: config.llmSystem }];
 
   if (chatHistory.length > 0) {
     messages.push(...chatHistory);
   }
   messages.push({ role: "user", content: transcript });
 
-  if (config.llmPostprompt) {
-    messages.push({ role: "user", content: config.llmPostprompt });
-  }
 
   let completion;
   try {

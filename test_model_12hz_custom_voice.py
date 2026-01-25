@@ -92,6 +92,10 @@ if __name__ == "__main__":
         help="Optional instruction for voice style (e.g., 'happy', 'angry').",
     )
     args = parser.parse_args()
+    # If the provided text argument is a path to a file, read its contents.
+    if os.path.isfile(args.text):
+        with open(args.text, "r", encoding="utf-8") as f:
+            args.text = f.read().strip()
     try:
         main(args.text, args.speaker)
     except KeyboardInterrupt:

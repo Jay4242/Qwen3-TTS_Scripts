@@ -67,6 +67,15 @@ function updateRecordButton() {
   recordButton.textContent = isRecording ? "Stop chatting" : "Start chatting";
 }
 
+function scrollChatToBottom() {
+  if (!chatLog) {
+    return;
+  }
+  requestAnimationFrame(() => {
+    chatLog.scrollTop = chatLog.scrollHeight;
+  });
+}
+
 function renderChat() {
   if (!chatLog) {
     return;
@@ -77,6 +86,7 @@ function renderChat() {
     empty.className = "chat-empty";
     empty.textContent = "No messages yet.";
     chatLog.appendChild(empty);
+    scrollChatToBottom();
     return;
   }
   chatHistory.forEach((entry) => {
@@ -100,6 +110,7 @@ function renderChat() {
 
     chatLog.appendChild(messageEl);
   });
+  scrollChatToBottom();
 }
 
 function appendChatMessage(role, content, audioBase64 = null) {

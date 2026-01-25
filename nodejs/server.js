@@ -59,10 +59,10 @@ setGlobalDispatcher(
 
 const referenceAudioPath = process.env.REF_AUDIO_PATH
   ? path.resolve(__dirname, process.env.REF_AUDIO_PATH)
-  : path.resolve(__dirname, "..", "poppy.wav");
+  : path.resolve(__dirname, "..", "filename.wav");
 const referenceTextPath = process.env.REF_TEXT_PATH
   ? path.resolve(__dirname, process.env.REF_TEXT_PATH)
-  : path.resolve(__dirname, "..", "poppy.txt");
+  : path.resolve(__dirname, "..", "filename.txt");
 const referenceAudioBuffer = fs.readFileSync(referenceAudioPath);
 const referenceText = fs.readFileSync(referenceTextPath, "utf-8").trim();
 if (!referenceText) {

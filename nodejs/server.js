@@ -3,6 +3,7 @@ const path = require("path");
 const express = require("express");
 const multer = require("multer");
 const OpenAI = require("openai");
+const { Agent, setGlobalDispatcher } = require("undici");
 
 require("dotenv").config();
 
@@ -40,6 +41,20 @@ const config = {
   qwenTtsLang: process.env.QWEN_TTS_LANG ?? "Auto",
   ttsTimeoutSeconds: parseTimeoutSeconds(process.env.TTS_TIMEOUT_SECONDS),
 };
+
+const maxFetchTimeoutMs = toTimeoutMs(
+  Math.max(
+    config.whisperTimeoutSeconds,
+    config.llmTimeoutSeconds,
+    config.ttsTimeoutSeconds
+  )
+);
+setGlobalDispatcher(
+  new Agent({
+    headersTimeout: maxFetchTimeoutMs,
+    bodyTimeout: maxFetchTimeoutMs,
+  })
+);
 
 const referenceAudioPath = process.env.REF_AUDIO_PATH
   ? path.resolve(__dirname, process.env.REF_AUDIO_PATH)

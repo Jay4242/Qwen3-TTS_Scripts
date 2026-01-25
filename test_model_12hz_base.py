@@ -155,6 +155,10 @@ if __name__ == "__main__":
     if os.path.isfile(args.ref_text):
         with open(args.ref_text, "r", encoding="utf-8") as f:
             args.ref_text = f.read().strip()
+    # If the provided syn-text argument is a path to a file, read its contents.
+    if os.path.isfile(args.syn_text):
+        with open(args.syn_text, "r", encoding="utf-8") as f:
+            args.syn_text = f.read().strip()
     try:
         main(args.ref_audio, args.ref_text, args.syn_text, args.syn_lang)
     except KeyboardInterrupt:

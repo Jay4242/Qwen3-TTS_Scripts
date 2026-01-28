@@ -47,6 +47,12 @@ Each script provides its own `--help` output describing required arguments, e.g.
 python qwen-tts-client.py --help
 ```
 
+### Custom Voice Files
+
+For the OpenAI‑compatible server example, custom voice reference files must be placed in the repository root (or the directory where you run the script).  
+Provide a `<voice_name>.wav` audio file and a matching `<voice_name>.txt` transcript file.  
+The server will look for these files based on the `voice` field in the request payload.
+
 ## Notes
 
 - The scripts assume the Qwen3‑TTS models are available via the Hugging Face hub.  

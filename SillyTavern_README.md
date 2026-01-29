@@ -28,6 +28,7 @@ You have to prep the voices you want to clone.
 Now that you have the .wav/.txt pairing(s) & the script running the server you can hook it up to SillyTavern as an `OpenAI Compatible` endpoint.
 
 The `Provider Endpoint` field is your server address at port & endpoint `:8000/v1/audio/speech`.
+
 The `Available Voices (comma separated):` field is where you enter the voices you named the .wav/.txt, without spaces between them.  Without the .wav/.txt.  So if you named a pairing GlaDOS.wav & GlaDOS.txt it would simply be `GlaDOS`.
 
 Once you have those entered you can hit 'Reload' next to the `TTS Provider` section and you should be able to select which voice is used for the character, the user, and the default voice.
